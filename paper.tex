@@ -627,7 +627,7 @@ The experimental results demonstrate that a cascaded architecture---combining ph
 
 The success of the random forest model can be attributed to three factors. First, ensemble averaging across decorrelated trees mitigates the overfitting that a single decision tree would exhibit on the small spoofed sample. Second, the \texttt{'balanced'} class-weight parameter forces the split criterion to penalize misclassifications of the minority spoofed class more heavily. This dynamic yields the high classification accuracy observed in the validation phase baseline, stabilizing feature thresholds before final validation on the unseen test anomalies. Third, the \texttt{'balanced'} class-weight parameter forces the split criterion to penalise misclassification of the minority spoofed class more heavily, improving recall at a modest cost in precision.
 
-The dominance of the EKF2 innovation ratio features (particularly heuristic H8, which compares GPS-derived position against the EKF2 state estimate) is consistent with the underlying physics: a spoofed GPS signal injects position and velocity errors that propagate through the Kalman filter's measurement update step, manifesting as inflated innovation vectors. The IMU angular rate consistency (H4) ranks highly because the spoofed GPS trajectory is kinematically implausible---the reported GPS velocity vector may change abruptly while the IMU gyroscope registers a smooth turn rate, creating a cross-modal inconsistency that the classifier can exploit.
+The dominance of the EKF2 innovation ratio features (particularly H7, which captures abnormal estimator innovation values) is consistent with the underlying physics: a spoofed GPS signal injects position and velocity errors that propagate through the Kalman filter's measurement update step, manifesting as inflated innovation vectors. The GPS--IMU consistency rule (H8) also ranks highly because the spoofed GPS trajectory is kinematically implausible---the reported GPS velocity vector may change abruptly while the IMU gyroscope registers comparatively smooth motion, creating a cross-modal inconsistency that the classifier can exploit.
 
 The relatively modest F1-score of 0.63 for the spoofed class warrants careful interpretation. The support of only 30 positive examples in the test set means that each misclassification shifts the metric by approximately 3 percentage points. More fundamentally, the test windows were deliberately drawn from the earliest seconds of the attack, when the GPS offset is still small and the EKF2 filter has not fully diverged. In practice, the classifier's recall improves to approximately 0.90 on windows sampled from fully developed spoofing (offset $>$~10~m), as confirmed by the validation set results where spoofed windows spanned the full attack duration.
 
@@ -654,7 +654,7 @@ Table~\ref{tab:comparison} summarises the positioning of this work relative to r
 Tanil et al.~\cite{tanil2018} & GNSS/INS integration  & Tactical   & $>$95\%   & Not reported \\
 Khoei et al.~\cite{khoei2022dynamic} & Dynamic selection for spoofing detection & MEMS & [update accuracy] & [update latency] \\
 Sung et al.~\cite{sung2022} & 1D CNN on GPS+IMU & MEMS & 96.8\% & $\sim$3~s \\
-Aissou et al.~\cite{aissou2022} & MAVLink anomaly detection & N/A & 94.2\% & $\sim$1~s \\
+Aissou et al.~\cite{aissou2022} & Instance-based supervised ML & N/A & 94.2\% & Not reported \\
 This work & Heuristic + RF cascade & MEMS & 98.0\% & $\sim$4.8~s \\
 \bottomrule
 \end{tabularx}
