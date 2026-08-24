@@ -615,7 +615,7 @@ Several strategies exist to reduce latency without sacrificing detection accurac
     \item \textbf{Higher polling frequency.} The EKF2 update rate can be configured up to 50~Hz on modern flight controllers, reducing the per-sample interval from 93~ms to 20~ms and proportionally shrinking the window duration.
 \end{enumerate}
 
-The fundamental result is that $T_{\text{react}}$ (2.0~s) exceeds the window duration (2.8~s) in the baseline configuration, confirming that the detector can raise an alert before the spoofing drift has carried the UAV beyond the geo-fence. Moreover, the GTI reaches the attenuation threshold ($G \leq 0.7$) at $t \approx 4.5$~s, which is before the classifier's first anomaly flag at $t \approx 4.8$~s, providing a mechanism for early, graduated intervention that does not rely on a binary classification decision.
+The fundamental result is that $T_{\text{window}}$ (2.8~s) exceeds $T_{\text{react}}$ (2.0~s) in the baseline configuration, meaning the detector requires more time to raise an alert than is available for a reactive manoeuvre in the high-speed obstacle-avoidance scenario. This gap motivates the latency-reduction strategies listed above. Nevertheless, the GTI reaches the attenuation threshold ($G \leq 0.7$) at $t \approx 4.5$~s, which is before the classifier's first anomaly flag at $t \approx 4.8$~s, providing a mechanism for early, graduated intervention that does not rely on a binary classification decision.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussions}
