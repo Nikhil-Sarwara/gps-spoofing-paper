@@ -703,8 +703,14 @@ The hold timers (5~s for HOLD, 10~s for RTL) prevent spurious escalation on tran
 The GTI and graduated response together constitute a practical, implementable trust framework that can be integrated into existing PX4 flight stacks with minimal code changes: approximately 50 lines of C++ in the EKF2 module to compute $\Delta\Phi$ and $G_t$, plus 30 lines in the navigator module to implement the escalation logic.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Conclusions and Future Work}
+\section{Conclusions}
 \label{sec:conclusions}
+
+GPS spoofing poses a credible and growing threat to autonomous UAV operations, and the safety-critical nature of flight demands detection methods that are robust, low-latency, and deployable within existing SWaP constraints. This work has demonstrated that a pragmatic combination of physics-based reasoning and machine learning---both implemented entirely onboard using sensors already present in every flight controller---can achieve useful detection accuracy without the cost, weight, or complexity of specialised anti-spoofing hardware.
+
+The cascaded heuristic+ML architecture presented here is, at its core, a manifestation of a simple principle: physics makes spoofing detectable. A counterfeit GPS signal can replicate the structure of authentic satellite navigation data, but it cannot simultaneously satisfy the kinematic constraints imposed by the aircraft's inertial dynamics, the consistency requirements of a multi-sensor Kalman filter, and the physical plausibility of the resulting trajectory. The heuristic rules and the random forest classifier are, in different ways, probes for these physical impossibilities---and the experimental results confirm that the probes are effective.
+
+As UAVs transition from recreational and commercial applications into safety-of-life roles---package delivery, infrastructure inspection, emergency response, and urban air mobility---the security of their navigation systems will become not merely a technical concern but a regulatory and public-safety imperative. The methods developed in this paper, while requiring further validation, represent a step toward practical, deployable spoofing detection that can help bridge the gap between the current vulnerability of civil GPS and the resilience demanded by autonomous flight.
 
 \subsection{Summary of Contributions}
 
@@ -743,14 +749,6 @@ The following directions are identified for future investigation:
 \item \textbf{Adversarial robustness.} A determined adversary aware of the detection method could craft spoofing signals designed to evade the heuristic rules or fool the random forest classifier by mimicking the statistical properties of authentic GPS and IMU data. Evaluating the model's robustness against such adversarial examples is an important security consideration.
 \item \textbf{Adaptive Terrain-Aware Modeling.} The current framework can be extended to integrate real-time digital elevation models (DEMs) alongside an autonomous model-switching mechanism. By dynamically tracking topographic transitions, the flight system can automatically select and load specialized detection profiles optimized for the immediate landscape. This allows the system to cross-validate altitude signatures against expected terrain features seamlessly mid-flight, reliably distinguishing sophisticated vertical spoofing attacks from legitimate terrain-following maneuvers.
 \end{enumerate}
-
-\section{Conclusions}
-
-GPS spoofing poses a credible and growing threat to autonomous UAV operations, and the safety-critical nature of flight demands detection methods that are robust, low-latency, and deployable within existing SWaP constraints. This work has demonstrated that a pragmatic combination of physics-based reasoning and machine learning---both implemented entirely onboard using sensors already present in every flight controller---can achieve useful detection accuracy without the cost, weight, or complexity of specialised anti-spoofing hardware.
-
-The cascaded heuristic+ML architecture presented here is, at its core, a manifestation of a simple principle: physics makes spoofing detectable. A counterfeit GPS signal can replicate the structure of authentic satellite navigation data, but it cannot simultaneously satisfy the kinematic constraints imposed by the aircraft's inertial dynamics, the consistency requirements of a multi-sensor Kalman filter, and the physical plausibility of the resulting trajectory. The heuristic rules and the random forest classifier are, in different ways, probes for these physical impossibilities---and the experimental results confirm that the probes are effective.
-
-As UAVs transition from recreational and commercial applications into safety-of-life roles---package delivery, infrastructure inspection, emergency response, and urban air mobility---the security of their navigation systems will become not merely a technical concern but a regulatory and public-safety imperative. The methods developed in this paper, while requiring further validation, represent a step toward practical, deployable spoofing detection that can help bridge the gap between the current vulnerability of civil GPS and the resilience demanded by autonomous flight.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Back Matter
