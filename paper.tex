@@ -605,7 +605,7 @@ The 3-second detection window exceeds the 2-second safe reaction time for high-s
 Several strategies exist to reduce latency without sacrificing detection accuracy:
 
 \begin{enumerate}
-    \item \textbf{Reduced window size.} A window of $N = 15$ samples halves $T_{\text{window}}$ to 1.4~s. Preliminary experiments (not shown) indicate that detection accuracy degrades only marginally ($\sim$2\%) at this window length, as the heuristic features themselves respond within 2--3 samples of spoofing onset.
+    \item \textbf{Reduced window size.} A window of $N = 15$ samples halves $T_{\text{window}}$ to 1.4~s, well within the safe reaction window. The trade-off between window length and detection accuracy under this reduced configuration warrants further investigation.
     \item \textbf{Two-tier cascade.} The heuristic scores H1--H8 can be thresholded independently as a rapid preliminary check, reserving the random forest for confirmatory inference. Since the heuristics are simple arithmetic comparisons, they execute in under 100~$\mu$s per record.
     \item \textbf{Higher polling frequency.} The EKF2 update rate can be configured up to 50~Hz on modern flight controllers, reducing the per-sample interval from 93~ms to 20~ms and proportionally shrinking the window duration.
 \end{enumerate}
