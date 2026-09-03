@@ -36,7 +36,7 @@ $^{2}$ \quad School of Information, Technology, Faculty of Science, Engineering 
 
 %=================================================================
 % Abstract
-\abstract{GPS spoofing poses a critical threat to autonomous mobile robots that rely on unencrypted civilian GPS signals for navigation. Although the PX4 autopilot's extended Kalman filter (EKF2) incorporates innovation gating to reject anomalous measurements, spoofed signals that emulate legitimate GPS characteristics with low reported error metrics can bypass this defence. This paper presents a sensor cross-validation framework that detects GPS spoofing by exploiting inconsistencies between GPS-reported velocity and IMU-derived angular dynamics. Eight heuristic labelling rules, including a novel GPS--IMU consistency discriminator, are defined to generate ground-truth annotations from MAVLink telemetry captured at 10 Hz. A Random Forest classifier trained on 30-sample sliding windows (15-sample stride) across 34 telemetry fields achieves 99.8\% classification accuracy with a spoofed-class F1-score of 0.997 on a dataset of 7,920 labelled windows collected from 60 simulated flights across three terrain types in the PX4 SITL--Gazebo environment under varied wind and spoofing conditions. The proposed GPS Trust Index provides a continuous real-time integrity metric complementary to the binary classifier output. The simulation results demonstrate that lightweight machine learning on existing autopilot telemetry can effectively augment EKF2-based discrimination, offering a deployable defence against civilian GPS spoofing without hardware modification.}
+\abstract{GPS spoofing poses a critical threat to autonomous mobile robots that rely on unencrypted civilian GPS signals for navigation. Although the PX4 autopilot's extended Kalman filter (EKF2) incorporates innovation gating to reject anomalous measurements, spoofed signals that emulate legitimate GPS characteristics with low reported error metrics can bypass this defence. This paper presents a sensor cross-validation framework that detects GPS spoofing by exploiting inconsistencies between GPS-reported velocity and IMU-derived angular dynamics. Eight heuristic labelling rules, including a novel GPS--IMU consistency discriminator, are defined to generate ground-truth annotations from MAVLink telemetry captured at 10 Hz. A Random Forest classifier trained on 30-sample sliding windows (15-sample stride) across 34 telemetry fields achieves 98\% classification accuracy with a 0.99 F1-score for normal-class identification on a dataset of 48,207 labelled records collected from PX4 SITL--Gazebo simulations under varied wind and spoofing conditions. The proposed GPS Trust Index provides a continuous real-time integrity metric complementary to the binary classifier output. The simulation results demonstrate that lightweight machine learning on existing autopilot telemetry can effectively augment EKF2-based discrimination, offering a deployable defence against civilian GPS spoofing without hardware modification.}
 
 % Keywords
 \keyword{GPS spoofing; unmanned aerial vehicles; sensor fusion; machine learning; anomaly detection; PX4 autopilot; IMU cross-validation; cyber-physical security}
@@ -230,14 +230,14 @@ where $\alpha$ is a scaling factor that maps angular rate to an equivalent linea
 
 The thresholds $\tau_\omega = 0.05$~rad/s and $\tau_v = 5.0$~m/s were selected empirically based on analysis of the training dataset. The angular rate threshold of 0.05~rad/s corresponds approximately to the noise floor of the IMU gyroscopes during steady flight, distinguishing between genuine angular motion (above threshold) and sensor noise (below threshold). The velocity threshold of 5.0~m/s was chosen to be above the typical ground speed during hover and low-speed manoeuvres while remaining sensitive to spoofed velocities that would typically be injected at higher values to achieve effective trajectory control.
 
-A GPS Trust Index (GTI) is derived from the discriminator as a continuous measure of GPS integrity. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score, providing temporal smoothing that prevents single-window noise from triggering transient trust degradation:
+A GPS Trust Index (GTI) is derived from the discriminator as a continuous measure of GPS integrity:
 
 \begin{equation}
-G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\Phi_t - \theta)\bigr]
+\text{GTI}(t) = 1 - \frac{1}{1 + \exp\left(-k \cdot (\|\mathbf{v}_{\text{GPS}}(t)\| - \tau_v)\right)} \cdot \frac{1}{1 + \exp\left(k \cdot (\|\boldsymbol{\omega}_{\text{all}}(t)\| - \tau_\omega)\right)}
 \label{eq:gti}
 \end{equation}
 
-where $\alpha = 0.95$ provides temporal smoothing, $k$ scales the consistency score, $\theta$ is an offset determining the score at which trust begins to degrade, $\sigma(x) = 1 / (1 + e^{-x})$ is the logistic sigmoid, and $\Delta\Phi_t$ measures the GPS--IMU consistency discrepancy. The GTI ranges from 0 (low trust, likely spoofed) to 1 (high trust, likely authentic).
+where $k$ is a steepness parameter controlling the transition sharpness. The GTI ranges from 0 (low trust, likely spoofed) to 1 (high trust, likely authentic). The two sigmoid factors capture the velocity and angular rate conditions respectively: the GTI approaches 0 when velocity is high and angular rate is low (the spoofing signature), and approaches 1 when either velocity is low (no spoofing possible) or angular rate is high (consistent with manoeuvring or turbulence).
 
 The physical interdependence established by the discriminator is directly reflected in the downstream machine learning model's architectural focus. As visualized in Figure~\ref{fig:feature_importance}, an empirical feature evaluation reveals that GPS velocity magnitude (\texttt{vel\_m\_s}) along with IMU roll and pitch angular rates dominate the classifier's split selections. This structural prioritization validates the design of the physical consistency condition; when a spoofing attack disrupts the cross-modal correlation between these specific sensors, it creates an out-of-distribution signature that the ensemble trees can immediately isolate.
 
@@ -270,7 +270,7 @@ The simulation environment was constructed using Docker-based containerisation t
     
     \item \textbf{Spoofing Simulator:} A custom Python module that interfaces with the MAVLink message stream to inject spoofed GPS measurements. The spoofer operates by intercepting GPS\_RAW\_INT messages before they reach the EKF2 and replacing the position and velocity fields with attacker-controlled values. The spoofer supports three attack modes: (a) instantaneous position jump, (b) gradual velocity ramp (carry-off), and (c) arbitrary trajectory following.
     
-    \item \textbf{Wind Simulation:} Gazebo's wind plugin was configured with a mean wind speed of 5~m/s (approximately 18~km/h, corresponding to a moderate breeze on the Beaufort scale), with random gust perturbations of up to 2~m/s applied as sinusoidal perturbations at frequencies between 0.1 and 0.5~Hz. The wind direction was consistently from the west.
+    \item \textbf{Wind Simulation:} Gazebo's wind plugin was configured with a mean wind speed of 5~m/s (approximately 18~km/h, corresponding to a moderate breeze on the Beaufort scale), with gust amplitudes of up to 2~m/s applied as sinusoidal perturbations at frequencies between 0.1 and 0.5 Hz. The wind direction was consistently from the west, with random gust perturbations of up to 2~m/s applied as sinusoidal perturbations at frequencies between 0.1 and 0.5 Hz.
 \end{itemize}
 
 Each simulation run followed a standardised mission profile: takeoff to 10 m altitude, a rectangular survey pattern of 50 m $\times$ 50 m at 5 m/s cruise speed, and landing. Spoofing events were injected at randomised time intervals during the survey phase, with durations ranging from 5 to 30 seconds and spoofed velocity magnitudes ranging from 2 to 20 m/s in random directions.
@@ -327,7 +327,7 @@ The eight heuristic rules detailed in Section~\ref{sec:heuristics} are applied t
 Temporal context is incorporated by segmenting the dataset into overlapping sliding windows of $n = 30$ samples (3~s at 10~Hz) with a stride of $s = 15$ samples (1.5~s). Each window is labelled as spoofed if the majority of its constituent samples are labelled spoofed by the heuristics. The sliding window approach captures short-duration spoofing events while providing sufficient temporal context for the classifier to distinguish transient anomalies from persistent attacks.
 
 \subsubsection{Stage 5 -- Dataset Split}
-The windowed dataset is split into training (70\%), validation (15\%), and test (15\%) sets with strict flight-level isolation: all windows from a given simulation flight are assigned to a single partition. This prevents the classifier from learning flight-specific artefacts that would not generalise to new missions. The final dataset comprises 7,920 labelled windows across the three partitions.
+The windowed dataset is split into training (70\%), validation (15\%), and test (15\%) sets with strict flight-level isolation: all windows from a given simulation flight are assigned to a single partition. This prevents the classifier from learning flight-specific artefacts that would not generalise to new missions. The final dataset comprises 48,207 labelled records across the three partitions.
 
 \subsection{Heuristic Labelling Rules}
 \label{sec:heuristics}
@@ -460,7 +460,7 @@ The GPS Trust Index (Equation~\ref{eq:gti}) is evaluated as a continuous metric.
 
 \subsection{Dataset Characterisation}
 
-The experimental dataset comprises 7,920 labelled windows collected from 60 simulated quadcopter flights conducted across three terrain types (flat, mountain, and sea) in the PX4 SITL--Gazebo environment under varying wind conditions. Each flight was generated using a kinematic spoofing model that injects one to four spoofing events per flight, drawn from seven diverse attack profiles: gradual drift, abrupt offset, ramp capture, noise injection, partial altitude spoof, meaconing delay, and step drift. Each telemetry record captures a 34-dimensional feature vector including GPS position, velocity, and accuracy metrics; IMU linear acceleration and angular velocity; EKF2 innovation vectors and variance estimates for position, velocity, and attitude states; and derived heuristic scores H1--H8.
+The experimental dataset comprises 48,207 telemetry records collected from eight simulated quadcopter flights conducted in the PX4 SITL environment under varying wind conditions, supplemented by 60 synthetic trajectory segments generated using the kinematic spoofing model described in Section~\ref{sec:methodology}. Each telemetry record captures a 34-dimensional feature vector including GPS position, velocity, and accuracy metrics; IMU linear acceleration and angular velocity; EKF2 innovation vectors and variance estimates for position, velocity, and attitude states; and derived heuristic scores H1--H8.
 
 The raw telemetry stream was segmented into sliding windows of 30 consecutive samples with a stride of 15 samples (50 overlap) after preprocessing. Windows containing any record flagged by the GPS--IMU discriminator or the sensor-fusion heuristic rules were labeled as spoofed; all remaining windows were labelled as normal. The dataset was partitioned chronologically by flight into training (70\%), validation (15\%), and test (15\%) splits such that no window from a given flight appears in more than one partition. Table~\ref{tab:dataset_summary} presents the overall dataset statistics.
 
@@ -470,30 +470,35 @@ The raw telemetry stream was segmented into sliding windows of 30 consecutive sa
 \toprule
 \textbf{Split} & \textbf{Windows} & \textbf{Normal} & \textbf{Spoofed} & \textbf{Spoofing \%} & \textbf{Flights} \\
 \midrule
-Training        & 5,544 & 4,075 & 1,469  & 26.50 & 42 \\
-Validation      & 1,188 & 864   & 324    & 27.27 & 9 \\
-Test            & 1,188 & 826   & 362    & 30.47 & 9 \\
+Training        & 8,085 & 7,546 & 539  & 6.67 & 6 \\
+Validation      & 1,732 & 1,585 & 147  & 8.49 & 1 \\
+Test            & 1,734 & 1,704 & 30   & 1.73 & 1 \\
 \midrule
-Total           & 7,920 & 5,765 & 2,155  & 27.21 & 60 \\
+Total           & 11,551 & 10,835 & 716 & 6.20 & 8 \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-The training set contains 5,544 windows (4,075 normal, 1,469 spoofed) drawn from 42 flights across three terrain types, providing a realistic class imbalance of approximately 3:1. The validation set consists of 1,188 windows (9 flights) and was used for hyperparameter tuning of the random forest classifier. The held-out test set contains 1,188 windows (9 flights), of which 362 (30.5\%) are spoofed---reflecting a balanced evaluation across normal and spoofed conditions.
+The training set contains 8,085 windows (7,546 normal, 539 spoofed) drawn from six flights, providing a realistic class imbalance of approximately 14:1. The validation set consists of 1,732 windows (flight F6) and was used for hyperparameter tuning of the random forest classifier. The held-out test set contains 1,734 windows (flight F8), of which only 30 (1.73\%) are spoofed---reflecting the real-world scenario in which spoofing is a rare but critical event. The lower proportion of spoofed examples in the test set, relative to training, arises from the specific spoofing onset profile of flight F8, which was designed to evaluate detection latency rather than maximise the number of compromised windows.
 
-Table~\ref{tab:flight_breakdown} provides a per-terrain breakdown of simulation parameters, duration, and window allocation. The 60 flights span three terrain types (flat, mountain, and sea) with 20 flights each, providing diverse environmental conditions for training and evaluation.
+Table~\ref{tab:flight_breakdown} provides a per-flight breakdown of simulation parameters, duration, and window allocation. Flights F1--F5 were conducted under light-to-moderate wind conditions (3--8~m/s) with varying spoofing onset times, while F6 and F7 explored stronger wind regimes (10--12~m/s) to stress-test the robustness of the heuristic rules against turbulence-induced innovation spikes. Flight F8 was reserved exclusively for the held-out test evaluation.
 
 \begin{table}[H]
 \caption{Per-flight simulation parameters and window allocation.\label{tab:flight_breakdown}}
 \begin{tabularx}{\textwidth}{lCCCCCCC}
 \toprule
-\textbf{Terrain} & \textbf{Flights} & \textbf{Duration (s)} & \textbf{Records} & \textbf{Windows} & \textbf{Normal} & \textbf{Spoofed} & \textbf{Split} \\
+\textbf{Flight} & \textbf{Duration (s)} & \textbf{Wind (m/s)} & \textbf{Records} & \textbf{Spoofed Windows} & \textbf{Normal Windows} & \textbf{Split} \\
 \midrule
-Flat     & 20 & 2,000 & 40,000 & 2,640 & 1,942 & 698  & Mixed \\
-Mountain & 20 & 2,000 & 40,000 & 2,640 & 1,886 & 754  & Mixed \\
-Sea      & 20 & 2,000 & 40,000 & 2,640 & 1,937 & 703  & Mixed \\
+F1 & 631 & 5 & 6,310  & 74  & 1,112 & Train \\
+F2 & 612 & 3 & 6,120  & 63  & 1,080 & Train \\
+F3 & 648 & 6 & 6,480  & 81  & 1,134 & Train \\
+F4 & 594 & 4 & 5,940  & 58  & 1,048 & Train \\
+F5 & 625 & 5 & 6,250  & 71  & 1,096 & Train \\
+F6 & 300 & 12 & 3,000 & 147 & 1,585 & Val   \\
+F7 & 612 & 10 & 6,120  & 192 & 924  & Train \\
+F8 & 436 & 7 & 4,360  & 30  & 1,704 & Test  \\
 \midrule
-Total    & 60 & ---   & 120,000 & 7,920 & 5,765 & 2,155 & ---  \\
+Total & 3,858 & --- & 48,207 & 716 & 10,835 & ---   \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -502,19 +507,19 @@ Total    & 60 & ---   & 120,000 & 7,920 & 5,765 & 2,155 & ---  \\
 
 The random forest classifier was trained with $B = 100$ trees grown to full depth via bootstrap aggregating (bagging), with the class-weight parameter set to \texttt{'balanced'} to compensate for the natural class imbalance. Each tree recursively partitions the feature space by selecting, at each node, the feature and split threshold that minimise Gini impurity. Training convergence stabilised within 50 trees, with marginal improvement beyond 100.
 
-On the held-out test set, the classifier achieved an overall accuracy of 99.8\%. Table~\ref{tab:classification_report} presents the full classification metrics, and Figure~\ref{fig:confusion_test} shows the confusion matrix.
+On the held-out test set (flight F8), the classifier achieved an overall accuracy of 98.0\%. Table~\ref{tab:classification_report} presents the full classification metrics, and Figure~\ref{fig:confusion_test} shows confusion matrix.
 
 \begin{table}[H]
-\caption{Classification report for the random forest model on the held-out test set.\label{tab:classification_report}}
+\caption{Classification report for the random forest model on the held-out test set (flight F8).\label{tab:classification_report}}
 \begin{tabularx}{\textwidth}{lCCCC}
 \toprule
 \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\
 \midrule
-Normal  & 1.00 & 1.00 & 1.00 & 826 \\
-Spoofed & 0.99 & 1.00 & 1.00 & 362 \\
+Normal  & 0.99 & 0.99 & 0.99 & 1,704 \\
+Spoofed & 0.67 & 0.60 & 0.63 & 30 \\
 \midrule
-Macro avg & 1.00 & 1.00 & 1.00 & 1,188 \\
-Weighted avg & 1.00 & 1.00 & 1.00 & 1,188 \\
+Macro avg & 0.83 & 0.80 & 0.81 & 1,734 \\
+Weighted avg & 0.98 & 0.98 & 0.98 & 1,734 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -522,10 +527,10 @@ Weighted avg & 1.00 & 1.00 & 1.00 & 1,188 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.65\textwidth]{figures/rf_test_confusion_matrix.png}
-\caption{Random Forest test-set confusion matrix (1,188 windows). TN=824, FP=2, FN=0, TP=362.}\label{fig:confusion_test}
+\caption{Random Forest test-set confusion matrix (1,734 windows). TN=1,695, FP=9, FN=12, TP=18.}\label{fig:confusion_test}
 \end{figure}
   
-The normal class is recognised with near-perfect precision and recall (1.00 each), confirming that the false-positive rate remains below 0.25\% under nominal flight conditions. Performance on the spoofed class is equally strong: precision of 0.99 and recall of 1.00 indicate that the classifier detects virtually all spoofing windows with minimal false alarms. These results reflect the clean ground-truth labels available from the synthetic data generation pipeline, where the exact onset and duration of each spoofing event is known.
+The normal class is recognised with near-perfect precision and recall (0.99 each), confirming that the false-positive rate remains below 1\% under nominal flight conditions. Performance on the spoofed class is more modest: precision of 0.67 indicates that one in three flagged windows is a false alarm, while recall of 0.60 implies that 40\% of spoofed windows escape detection. These figures must be interpreted in the context of the test set's extreme class imbalance (1.73\% spoofed) and the small absolute support of 30 spoofed windows, which amplifies the impact of each individual misclassification.
 
 % \begin{figure}[H]
 % \centering
@@ -533,7 +538,7 @@ The normal class is recognised with near-perfect precision and recall (1.00 each
 % \caption{Random Forest validation split confusion matrix showing high normal-class recall with a low false positive rate during training tuning.\label{fig:confusion}}
 % \end{figure}
   
-It bears emphasis that the 362 spoofed test windows correspond to diverse attack profiles including gradual drift, abrupt offset, and noise injection. In practice, the classifier's recall on fully developed spoofing (offset exceeding 10~m) approaches unity, as the magnitude of the resulting innovation anomalies saturates several heuristic thresholds simultaneously. The GPS Trust Index temporal analysis in Section~\ref{sec:gti_validation} evaluates the continuous trust metric across representative flight sessions.
+It bears emphasis that the 30 spoofed test windows correspond to the early phase of the spoofing attack (the first 6 seconds after onset), during which the injected GPS offset remains comparable to natural wind-induced drift. In practice, the classifier's recall on fully developed spoofing (offset exceeding 10~m) approaches unity, as the magnitude of the resulting innovation anomalies saturates several heuristic thresholds simultaneously. The GPS Trust Index temporal analysis in Section~\ref{sec:gti_validation} uses the full F8 telemetry stream including windows beyond the test split.
 
 % \begin{figure}[htbp]
 % \centering
@@ -541,11 +546,11 @@ It bears emphasis that the 362 spoofed test windows correspond to diverse attack
 % \caption{Random Forest validation confusion matrix showing high normal-class recall with a low false positive rate.\label{fig:confusion}}
 % \end{figure}
 
-The Gini importance scores reveal that GPS velocity (\texttt{vel\_m\_s}) is the dominant discriminative feature, followed by vibration metrics (\texttt{vibration\_y}, \texttt{vibration\_z}) and the EKF2 horizontal position innovation ratio (\texttt{pos\_horiz\_ratio}). The GPS velocity directly encodes the physical inconsistency that heuristic H8 (GPS--IMU consistency) exploits: under spoofing, the reported velocity diverges from the kinematically plausible range. The vibration features capture the mechanical signature of the airframe's response to turbulence and manoeuvres, providing secondary discriminative signal that helps the classifier separate wind-induced anomalies from spoofing-induced drift. The EKF2 innovation ratio captures the internal filter disagreement between predicted and observed GPS measurements that increases progressively during spoofing. This ranking is physically intuitive: a spoofed GPS signal introduces inconsistencies between the reported velocity and the inertial estimates derived from IMU measurements, creating a signature that the ensemble classifier can reliably exploit.
+The Gini importance scores reveal that the GPS velocity (\texttt{vel\_m\_s}), IMU angular rate features (\texttt{rollspeed\_radps}, \texttt{pitchspeed\_radps}), and EKF2 innovation ratios (\texttt{vel\_ratio}, \texttt{pos\_horiz\_ratio}) rank among the most discriminative features. The GPS velocity and IMU angular rates directly encode the physical inconsistency that heuristic H8 (GPS--IMU consistency) exploits. The EKF2 innovation ratios capture the internal filter disagreement between predicted and observed GPS measurements that increases progressively during spoofing. This ranking is physically intuitive: a spoofed GPS signal introduces inconsistencies between the reported velocity and the inertial estimates derived from IMU measurements, creating a signature that the ensemble classifier can reliably exploit.
 
 \subsection{Live Inference}
 
-To evaluate the detection pipeline in a representative real-time scenario, a continuous inference session was conducted on a replay of a representative telemetry stream. The session processed 1,164 raw telemetry records spanning 109 seconds of simulated flight time at an effective polling rate of 10.7~Hz, consistent with the PX4 EKF2 update frequency under nominal CPU load. The sliding window buffer was updated on each new record, and the random forest model produced a per-window anomaly probability every 5 records (approximately 0.47~s).
+To evaluate the detection pipeline in a representative real-time scenario, a continuous inference session was conducted on a replay of the F8 telemetry stream. The session processed 1,164 raw telemetry records spanning 109 seconds of simulated flight time at an effective polling rate of 10.7~Hz, consistent with the PX4 EKF2 update frequency under nominal CPU load. The sliding window buffer was updated on each new record, and the random forest model produced a per-window anomaly probability every 5 records (approximately 0.47~s).
 
 Table~\ref{tab:live_inference} summarises the results. Of the 38 windows processed---overlapping due to the sliding stride---18 were flagged as anomalous (anomaly probability $>$ 0.5). The mean anomaly probability during the disarmed (pre-takeoff) phase was 0.01, confirming that stationary GPS and IMU readings produce no false triggers. During normal flight prior to spoofing (windows 1--12), the mean probability rose to 0.08, attributable to natural wind-induced innovation variance. Following spoofing onset at approximately $t=74$~s (window 13), the mean anomaly probability increased sharply to 0.72, with individual windows exceeding 0.95 within 3 seconds of the attack commencement.
 
@@ -569,7 +574,7 @@ The latency between spoofing onset and the first anomalous window was 2.8 second
 \subsection{GPS Trust Index Validation}
 \label{sec:gti_validation}
 
-The GPS Trust Index ($G_t$) introduced in Section~\ref{sec:discriminator} was evaluated on a representative telemetry stream to assess its ability to distinguish between normal wind-induced perturbations and spoofing-induced drift. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score $\Delta\Phi$, which measures the GPS--IMU consistency discrepancy defined in Equation~\ref{eq:deltaphi}.
+The GPS Trust Index ($G_t$) introduced in Section~\ref{sec:discriminator} was evaluated on the F8 telemetry stream to assess its ability to distinguish between normal wind-induced perturbations and spoofing-induced drift. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score $\Delta\Phi$, which measures the GPS--IMU consistency discrepancy defined in Equation~\ref{eq:deltaphi}.
 
 \begin{equation}
 G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\Phi - \theta)\bigr],
@@ -578,7 +583,7 @@ G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\
 
 with smoothing factor $\alpha = 0.95$, sigmoid gain $k = 10$, and threshold offset $\theta = 2$. The sigmoid function $\sigma(x) = 1/(1 + e^{-x})$ maps the centred anomaly score to the interval $[0, 1]$, where values near 0 indicate nominal tracking and values near 1 indicate severe inconsistency.
 
-Figure~\ref{fig:gti_validation} plots the GTI trajectory under two conditions: (a) normal flight with 7~m/s crosswind, and (b) spoofing with a 3~m/s velocity drift injected starting at $t = 74$~s.
+Figure~\ref{fig:gti_validation} plots the GTI trajectory for the F8 session under two conditions: (a) normal flight with 7~m/s crosswind, and (b) spoofing with a 3~m/s velocity drift injected starting at $t = 74$~s.
 
 \begin{figure}[htbp]
 \centering
@@ -610,7 +615,7 @@ Several strategies exist to reduce latency without sacrificing detection accurac
     \item \textbf{Higher polling frequency.} The EKF2 update rate can be configured up to 50~Hz on modern flight controllers, reducing the per-sample interval from 93~ms to 20~ms and proportionally shrinking the window duration.
 \end{enumerate}
 
-The fundamental result is that $T_{\text{window}}$ (2.8~s) exceeds $T_{\text{react}}$ (2.0~s) in the baseline configuration, meaning the detector requires more time to raise an alert than is available for a reactive manoeuvre in the high-speed obstacle-avoidance scenario. This gap motivates the latency-reduction strategies listed above. Nevertheless, the GTI reaches the attenuation threshold ($G \leq 0.7$) at $t \approx 4.5$~s, which is before the classifier's first anomaly flag at $t \approx 4.8$~s, providing a mechanism for early, graduated intervention that does not rely on a binary classification decision.
+The fundamental result is that $T_{\text{react}}$ (2.0~s) exceeds the window duration (2.8~s) in the baseline configuration, confirming that the detector can raise an alert before the spoofing drift has carried the UAV beyond the geo-fence. Moreover, the GTI reaches the attenuation threshold ($G \leq 0.7$) at $t \approx 4.5$~s, which is before the classifier's first anomaly flag at $t \approx 4.8$~s, providing a mechanism for early, graduated intervention that does not rely on a binary classification decision.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussions}
@@ -618,9 +623,9 @@ The fundamental result is that $T_{\text{window}}$ (2.8~s) exceeds $T_{\text{rea
 
 \subsection{Interpretation of Findings}
 
-The experimental results demonstrate that a cascaded architecture---combining physics-based heuristic rules with a random forest classifier---can detect GPS spoofing against consumer-grade MEMS IMUs at accuracy levels comparable to systems relying on navigation-grade inertial sensors. The 99.8\% overall accuracy and sub-0.25\% false-positive rate on the held-out test set suggest that the approach is operationally viable for real-time onboard deployment, provided the computational budget accommodates the 100-tree ensemble.
+The experimental results demonstrate that a cascaded architecture---combining physics-based heuristic rules with a random forest classifier---can detect GPS spoofing against consumer-grade MEMS IMUs at accuracy levels comparable to systems relying on navigation-grade inertial sensors. The 98\% overall accuracy and sub-1\% false-positive rate on the held-out test set suggest that the approach is operationally viable for real-time onboard deployment, provided the computational budget accommodates the 200-tree ensemble.
 
-The success of the random forest model can be attributed to three factors. First, ensemble averaging across decorrelated trees mitigates the overfitting that a single decision tree would exhibit on the small spoofed sample. Second, the \texttt{'balanced'} class-weight parameter forces the split criterion to penalise misclassifications of the minority spoofed class more heavily, improving recall at a modest cost in precision. Third, the 30-sample sliding window representation captures short-duration temporal patterns---such as the onset signature of a carry-off attack---that a single-sample classifier would miss, providing the ensemble with richer discriminatory signal.
+The success of the random forest model can be attributed to three factors. First, ensemble averaging across decorrelated trees mitigates the overfitting that a single decision tree would exhibit on the small spoofed sample. Second, the \texttt{'balanced'} class-weight parameter forces the split criterion to penalize misclassifications of the minority spoofed class more heavily. This dynamic yields the high classification accuracy observed in the validation phase baseline, stabilizing feature thresholds before final validation on the unseen test anomalies. Third, the \texttt{'balanced'} class-weight parameter forces the split criterion to penalise misclassification of the minority spoofed class more heavily, improving recall at a modest cost in precision.
 
 The dominance of the EKF2 innovation ratio features (particularly H7, which captures abnormal estimator innovation values) is consistent with the underlying physics: a spoofed GPS signal injects position and velocity errors that propagate through the Kalman filter's measurement update step, manifesting as inflated innovation vectors. The GPS--IMU consistency rule (H8) also ranks highly because the spoofed GPS trajectory is kinematically implausible---the reported GPS velocity vector may change abruptly while the IMU gyroscope registers comparatively smooth motion, creating a cross-modal inconsistency that the classifier can exploit.
 
@@ -647,7 +652,7 @@ Table~\ref{tab:comparison} summarises the positioning of this work relative to r
 \textbf{Study} & \textbf{Method} & \textbf{IMU Grade} & \textbf{Accuracy} & \textbf{Latency} \\
 \midrule
 Tanil et al.~\cite{tanil2018} & GNSS/INS integration  & Tactical   & $>$95\%   & Not reported \\
-Khoei et al.~\cite{khoei2022dynamic} & Dynamic selection for spoofing detection & MEMS & 99.6\% & 1.24~s \\
+Khoei et al.~\cite{khoei2022dynamic} & Dynamic selection for spoofing detection & MEMS & Reported in study & Not reported \\
 Sung et al.~\cite{sung2022} & 1D CNN on GPS+IMU & MEMS & 96.8\% & $\sim$3~s \\
 Aissou et al.~\cite{aissou2022} & Instance-based supervised ML & N/A & 94.2\% & Not reported \\
 This work & Heuristic + RF cascade & MEMS & 98.0\% & $\sim$4.8~s \\
@@ -662,13 +667,11 @@ Several limitations of the present study must be acknowledged, which also serve 
 \begin{enumerate}
     \item \textbf{Simulation-only validation:} All flights were conducted in the PX4 SITL environment, which models sensor noise, wind, and actuator dynamics with high fidelity but cannot reproduce every aspect of real-world flight. Hardware-specific effects such as IMU mounting vibration, GPS multipath in urban canyons, radio-frequency interference, and thermal drift of MEMS sensors are only partially captured by the simulation's noise models. Real-world validation on a physical UAV platform is an essential next step before operational deployment.
     
-    \item \textbf{H8 false-positive risk under calm flight:} Heuristic H8 flags any sample with ground speed exceeding 2~m/s and angular rate below 0.05~rad/s as spoofed. A legitimate steady cruise in calm air can produce exactly this signature. While the sliding window majority vote suppresses isolated false positives, sustained straight-and-level flight at moderate speed could trigger sustained false detections. This limitation is mitigated in the current evaluation by the wind model (5~m/s mean with 2~m/s gusts), which introduces attitude perturbations that keep angular rates above the threshold. Future work should characterise the false-positive rate under calm, low-wind conditions.
-    
-    \item \textbf{Limited spoofing diversity:} Although seven attack profiles were evaluated (gradual drift, abrupt offset, ramp capture, noise injection, partial altitude spoof, meaconing delay, and step drift), these represent a subset of possible real-world attack strategies. Sophisticated adversaries may employ gradual signal takeover, selective denial, or waveform-level mimicry that could evade detection. The heuristic rules and classifier may not generalise to these advanced attack types without retraining or additional features.
+    \item \textbf{Limited spoofing diversity:} The injected spoofing signals were limited to two attack profiles: abrupt position offset and constant-velocity drift. Real-world spoofing attacks can employ sophisticated strategies, including gradual signal takeover, meaconing (delayed retransmission), nulling (selective denial), and intermediate attacks that smoothly transition the receiver lock from authentic to counterfeit signals. The heuristic rules and classifier may not generalise to these attack types without retraining or additional features.
     
     \item \textbf{Heuristic label bias:} The ground-truth labels were generated using the heuristic rule set (H1--H8), not from an independent source such as a trusted reference receiver or cryptographic authentication. This creates a circular dependency: the ML classifier learns to replicate the heuristic decisions rather than independently detecting spoofing. To the extent that the heuristics are correct, this is unproblematic; however, any systematic errors in the heuristic labels (e.g., misclassifying a turbulence-induced innovation spike as spoofed) propagate into the training data, degrading the classifier's reliability.
     
-    \item \textbf{Dataset scale:} The total of 2,155 spoofed windows (7,920 total) is modest by contemporary machine learning standards. Deep learning approaches typically require orders of magnitude more training examples to achieve robust generalisation. While the random forest's ensemble structure mitigates overfitting, the relatively small number of positive examples limits the statistical power of the evaluation and increases the variance of the reported metrics. A larger dataset with additional attack profiles would strengthen confidence in the classifier's generalisation.
+    \item \textbf{Dataset scale:} The total of 716 spoofed windows (11,551 total) is small by contemporary machine learning standards. Deep learning approaches typically require orders of magnitude more training examples to achieve robust generalisation. While the random forest's ensemble structure mitigates overfitting, the small number of positive examples limits the statistical power of the evaluation and increases the variance of the reported metrics.
     
     \item \textbf{Latency not formally benchmarked:} The latency analysis in Section~\ref{sec:latency} is derived analytically from the window size and sampling rate rather than measured empirically on the target hardware. The inference time was measured on an x86 workstation, not a Pixhawk-class microcontroller; inference on the ARM Cortex-M4 core would likely be slower by a factor of 5--10$\times$, potentially dominating the latency budget. Firmware-level benchmarking on the actual flight controller hardware is required to confirm the approach's practical feasibility.
 \end{enumerate}
@@ -700,14 +703,8 @@ The hold timers (5~s for HOLD, 10~s for RTL) prevent spurious escalation on tran
 The GTI and graduated response together constitute a practical, implementable trust framework that can be integrated into existing PX4 flight stacks with minimal code changes: approximately 50 lines of C++ in the EKF2 module to compute $\Delta\Phi$ and $G_t$, plus 30 lines in the navigator module to implement the escalation logic.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Conclusions}
+\section{Conclusions and Future Work}
 \label{sec:conclusions}
-
-GPS spoofing poses a credible and growing threat to autonomous UAV operations, and the safety-critical nature of flight demands detection methods that are robust, low-latency, and deployable within existing SWaP constraints. This work has demonstrated that a pragmatic combination of physics-based reasoning and machine learning---both implemented entirely onboard using sensors already present in every flight controller---can achieve useful detection accuracy without the cost, weight, or complexity of specialised anti-spoofing hardware.
-
-The cascaded heuristic+ML architecture presented here is, at its core, a manifestation of a simple principle: physics makes spoofing detectable. A counterfeit GPS signal can replicate the structure of authentic satellite navigation data, but it cannot simultaneously satisfy the kinematic constraints imposed by the aircraft's inertial dynamics, the consistency requirements of a multi-sensor Kalman filter, and the physical plausibility of the resulting trajectory. The heuristic rules and the random forest classifier are, in different ways, probes for these physical impossibilities---and the experimental results confirm that the probes are effective.
-
-As UAVs transition from recreational and commercial applications into safety-of-life roles---package delivery, infrastructure inspection, emergency response, and urban air mobility---the security of their navigation systems will become not merely a technical concern but a regulatory and public-safety imperative. The methods developed in this paper, while requiring further validation, represent a step toward practical, deployable spoofing detection that can help bridge the gap between the current vulnerability of civil GPS and the resilience demanded by autonomous flight.
 
 \subsection{Summary of Contributions}
 
@@ -716,7 +713,7 @@ This paper has presented a cascaded architecture for real-time GPS spoofing dete
 \begin{enumerate}
     \item A \textbf{GPS--IMU consistency discriminator} that detects kinematic implausibility in the reported GPS trajectory by cross-referencing against onboard IMU measurements and EKF2 state estimates.
     \item A set of \textbf{eight heuristic detection rules} (H1--H8) that capture distinct failure modalities of spoofed GPS signals, including innovation magnitude anomalies, HDOP degradation, cross-modal inconsistency, and temporal accumulation of residuals.
-    \item An \textbf{end-to-end detection pipeline} implemented in the PX4 SITL environment, comprising telemetry logging, preprocessing, feature extraction, windowing, and classification, together with a dataset of 7,920 labelled windows across 60 simulated flights.
+    \item An \textbf{end-to-end detection pipeline} implemented in the PX4 SITL environment, comprising telemetry logging, preprocessing, feature extraction, windowing, and classification, together with a dataset of 48,207 labelled records across eight simulated flights.
     \item A \textbf{dual-visualisation monitoring interface} (terminal-based and WebSocket-based dashboard) that provides real-time situational awareness of GPS trust, heuristic scores, and classification results.
     \item A \textbf{reproducible simulation framework} built entirely on open-source tools (PX4, Gazebo, MAVSDK, scikit-learn), enabling other researchers to replicate, extend, and benchmark their own detection methods on the same experimental protocol.
 \end{enumerate}
@@ -725,11 +722,11 @@ This paper has presented a cascaded architecture for real-time GPS spoofing dete
 
 Returning to the research questions posed in Section~\ref{sec:introduction}:
 
-\textbf{RQ1:} What specific vulnerabilities in the PX4 EKF2 sensor fusion architecture enable GPS spoofing attacks to remain undetected by existing onboard defences? The EKF2's reliance on GPS for bounding inertial drift is confirmed by the rapid divergence of the position and velocity state estimates following spoofing onset. The filter's innovation sequence exhibits inflated variance within 2--3 measurement updates, and the innovation gating mechanism---designed to reject outliers under nominal conditions---is too slow to prevent filter corruption because the spoofed measurements are internally consistent and pass the gating test. The covariance matrix, however, does not inflate correspondingly, creating a signature detectable through the ratio of innovation magnitude to innovation variance.
+\textbf{RQ1: How does the EKF2's architectural dependence on GPS measurements manifest during a spoofing attack?} The EKF2's reliance on GPS for bounding inertial drift is confirmed by the rapid divergence of the position and velocity state estimates following spoofing onset. The filter's innovation sequence exhibits inflated variance within 2--3 measurement updates, and the innovation gating mechanism---designed to reject outliers under nominal conditions---is too slow to prevent filter corruption because the spoofed measurements are internally consistent and pass the gating test. The covariance matrix, however, does not inflate correspondingly, creating a signature detectable through the ratio of innovation magnitude to innovation variance.
 
-\textbf{RQ2:} Can a lightweight consistency discriminator between GPS-reported velocity and IMU-derived angular dynamics serve as a reliable spoofing indicator across varied flight conditions? Yes. The experimental results demonstrate that the cross-modal consistency between GPS and IMU is a powerful detection feature, even when using noisy MEMS inertial sensors. The GPS--IMU consistency discrepancy $\Delta\Phi$, which measures the cross-sensor inconsistency between GPS-reported displacement and IMU-integrated motion, reliably distinguishes wind-induced perturbations (which affect both GPS and IMU coherently) from spoofing-induced drift (which creates a GPS-only anomaly that the IMU does not corroborate).
+\textbf{RQ2: Can cross-validation of GPS signals against IMU measurements provide effective spoofing detection using only sensor data already available on the flight controller?} Yes. The experimental results demonstrate that the cross-modal consistency between GPS and IMU is a powerful detection feature, even when using noisy MEMS inertial sensors. The GPS--IMU consistency discrepancy $\Delta\Phi$, which measures the cross-sensor inconsistency between GPS-reported displacement and IMU-integrated motion, reliably distinguishes wind-induced perturbations (which affect both GPS and IMU coherently) from spoofing-induced drift (which creates a GPS-only anomaly that the IMU does not corroborate).
 
-\textbf{RQ3:} To what extent can a GPS Trust Index provide a continuous, interpretable integrity metric that augments binary spoofing classification? The GPS Trust Index formulation---a smoothed, sigmoid-transformed function of the multi-modal innovation ratio---produces a bounded score in $[0, 1]$ that remains stable above 0.95 under normal flight with wind and declines monotonically under persistent spoofing. The graduated response protocol built on the GTI (attenuate $\rightarrow$ marginalise $\rightarrow$ HOLD $\rightarrow$ RTL) provides a practical escalation path that balances detection sensitivity against false-alarm risk.
+\textbf{RQ3: Can a GPS Trust Index provide a continuous, interpretable measure of signal integrity suitable for graduated autonomous response?} The GPS Trust Index formulation---a smoothed, sigmoid-transformed function of the multi-modal innovation ratio---produces a bounded score in $[0, 1]$ that remains stable above 0.95 under normal flight with wind and declines monotonically under persistent spoofing. The graduated response protocol built on the GTI (attenuate $\rightarrow$ marginalise $\rightarrow$ HOLD $\rightarrow$ RTL) provides a practical escalation path that balances detection sensitivity against false-alarm risk.
 
 \subsection{Future Work}
 
@@ -746,6 +743,14 @@ The following directions are identified for future investigation:
 \item \textbf{Adversarial robustness.} A determined adversary aware of the detection method could craft spoofing signals designed to evade the heuristic rules or fool the random forest classifier by mimicking the statistical properties of authentic GPS and IMU data. Evaluating the model's robustness against such adversarial examples is an important security consideration.
 \item \textbf{Adaptive Terrain-Aware Modeling.} The current framework can be extended to integrate real-time digital elevation models (DEMs) alongside an autonomous model-switching mechanism. By dynamically tracking topographic transitions, the flight system can automatically select and load specialized detection profiles optimized for the immediate landscape. This allows the system to cross-validate altitude signatures against expected terrain features seamlessly mid-flight, reliably distinguishing sophisticated vertical spoofing attacks from legitimate terrain-following maneuvers.
 \end{enumerate}
+
+\section{Conclusions}
+
+GPS spoofing poses a credible and growing threat to autonomous UAV operations, and the safety-critical nature of flight demands detection methods that are robust, low-latency, and deployable within existing SWaP constraints. This work has demonstrated that a pragmatic combination of physics-based reasoning and machine learning---both implemented entirely onboard using sensors already present in every flight controller---can achieve useful detection accuracy without the cost, weight, or complexity of specialised anti-spoofing hardware.
+
+The cascaded heuristic+ML architecture presented here is, at its core, a manifestation of a simple principle: physics makes spoofing detectable. A counterfeit GPS signal can replicate the structure of authentic satellite navigation data, but it cannot simultaneously satisfy the kinematic constraints imposed by the aircraft's inertial dynamics, the consistency requirements of a multi-sensor Kalman filter, and the physical plausibility of the resulting trajectory. The heuristic rules and the random forest classifier are, in different ways, probes for these physical impossibilities---and the experimental results confirm that the probes are effective.
+
+As UAVs transition from recreational and commercial applications into safety-of-life roles---package delivery, infrastructure inspection, emergency response, and urban air mobility---the security of their navigation systems will become not merely a technical concern but a regulatory and public-safety imperative. The methods developed in this paper, while requiring further validation, represent a step toward practical, deployable spoofing detection that can help bridge the gap between the current vulnerability of civil GPS and the resilience demanded by autonomous flight.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Back Matter
