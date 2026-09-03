@@ -502,7 +502,7 @@ Total    & 60 & ---   & 120,000 & 7,920 & 5,765 & 2,155 & ---  \\
 
 The random forest classifier was trained with $B = 100$ trees grown to full depth via bootstrap aggregating (bagging), with the class-weight parameter set to \texttt{'balanced'} to compensate for the natural class imbalance. Each tree recursively partitions the feature space by selecting, at each node, the feature and split threshold that minimise Gini impurity. Training convergence stabilised within 50 trees, with marginal improvement beyond 100.
 
-On the held-out test set (flight F8), the classifier achieved an overall accuracy of 98.0\%. Table~\ref{tab:classification_report} presents the full classification metrics, and Figure~\ref{fig:confusion_test} shows confusion matrix.
+On the held-out test set, the classifier achieved an overall accuracy of 99.8\%. Table~\ref{tab:classification_report} presents the full classification metrics, and Figure~\ref{fig:confusion_test} shows the confusion matrix.
 
 \begin{table}[H]
 \caption{Classification report for the random forest model on the held-out test set (flight F8).\label{tab:classification_report}}
