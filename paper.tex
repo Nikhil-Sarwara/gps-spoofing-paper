@@ -533,7 +533,7 @@ The normal class is recognised with near-perfect precision and recall (1.00 each
 % \caption{Random Forest validation split confusion matrix showing high normal-class recall with a low false positive rate during training tuning.\label{fig:confusion}}
 % \end{figure}
   
-It bears emphasis that the 30 spoofed test windows correspond to the early phase of the spoofing attack (the first 6 seconds after onset), during which the injected GPS offset remains comparable to natural wind-induced drift. In practice, the classifier's recall on fully developed spoofing (offset exceeding 10~m) approaches unity, as the magnitude of the resulting innovation anomalies saturates several heuristic thresholds simultaneously. The GPS Trust Index temporal analysis in Section~\ref{sec:gti_validation} uses the full F8 telemetry stream including windows beyond the test split.
+It bears emphasis that the 362 spoofed test windows correspond to diverse attack profiles including gradual drift, abrupt offset, and noise injection. In practice, the classifier's recall on fully developed spoofing (offset exceeding 10~m) approaches unity, as the magnitude of the resulting innovation anomalies saturates several heuristic thresholds simultaneously. The GPS Trust Index temporal analysis in Section~\ref{sec:gti_validation} evaluates the continuous trust metric across representative flight sessions.
 
 % \begin{figure}[htbp]
 % \centering
