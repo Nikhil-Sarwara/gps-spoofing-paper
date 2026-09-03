@@ -515,11 +515,11 @@ On the held-out test set (flight F8), the classifier achieved an overall accurac
 \toprule
 \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\
 \midrule
-Normal  & 0.99 & 0.99 & 0.99 & 1,704 \\
-Spoofed & 0.67 & 0.60 & 0.63 & 30 \\
+Normal  & 1.00 & 1.00 & 1.00 & 826 \\
+Spoofed & 0.99 & 1.00 & 1.00 & 362 \\
 \midrule
-Macro avg & 0.83 & 0.80 & 0.81 & 1,734 \\
-Weighted avg & 0.98 & 0.98 & 0.98 & 1,734 \\
+Macro avg & 1.00 & 1.00 & 1.00 & 1,188 \\
+Weighted avg & 1.00 & 1.00 & 1.00 & 1,188 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -527,10 +527,10 @@ Weighted avg & 0.98 & 0.98 & 0.98 & 1,734 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.65\textwidth]{figures/rf_test_confusion_matrix.png}
-\caption{Random Forest test-set confusion matrix (1,734 windows). TN=1,695, FP=9, FN=12, TP=18.}\label{fig:confusion_test}
+\caption{Random Forest test-set confusion matrix (1,188 windows). TN=824, FP=2, FN=0, TP=362.}\label{fig:confusion_test}
 \end{figure}
   
-The normal class is recognised with near-perfect precision and recall (0.99 each), confirming that the false-positive rate remains below 1\% under nominal flight conditions. Performance on the spoofed class is more modest: precision of 0.67 indicates that one in three flagged windows is a false alarm, while recall of 0.60 implies that 40\% of spoofed windows escape detection. These figures must be interpreted in the context of the test set's extreme class imbalance (1.73\% spoofed) and the small absolute support of 30 spoofed windows, which amplifies the impact of each individual misclassification.
+The normal class is recognised with near-perfect precision and recall (1.00 each), confirming that the false-positive rate remains below 0.25\% under nominal flight conditions. Performance on the spoofed class is equally strong: precision of 0.99 and recall of 1.00 indicate that the classifier detects virtually all spoofing windows with minimal false alarms. These results reflect the clean ground-truth labels available from the synthetic data generation pipeline, where the exact onset and duration of each spoofing event is known.
 
 % \begin{figure}[H]
 % \centering
