@@ -719,7 +719,7 @@ This paper has presented a cascaded architecture for real-time GPS spoofing dete
 \begin{enumerate}
     \item A \textbf{GPS--IMU consistency discriminator} that detects kinematic implausibility in the reported GPS trajectory by cross-referencing against onboard IMU measurements and EKF2 state estimates.
     \item A set of \textbf{eight heuristic detection rules} (H1--H8) that capture distinct failure modalities of spoofed GPS signals, including innovation magnitude anomalies, HDOP degradation, cross-modal inconsistency, and temporal accumulation of residuals.
-    \item An \textbf{end-to-end detection pipeline} implemented in the PX4 SITL environment, comprising telemetry logging, preprocessing, feature extraction, windowing, and classification, together with a dataset of 48,207 labelled records across eight simulated flights.
+    \item An \textbf{end-to-end detection pipeline} implemented in the PX4 SITL environment, comprising telemetry logging, preprocessing, feature extraction, windowing, and classification, together with a dataset of 7,920 labelled windows across 60 simulated flights.
     \item A \textbf{dual-visualisation monitoring interface} (terminal-based and WebSocket-based dashboard) that provides real-time situational awareness of GPS trust, heuristic scores, and classification results.
     \item A \textbf{reproducible simulation framework} built entirely on open-source tools (PX4, Gazebo, MAVSDK, scikit-learn), enabling other researchers to replicate, extend, and benchmark their own detection methods on the same experimental protocol.
 \end{enumerate}
