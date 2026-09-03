@@ -327,7 +327,7 @@ The eight heuristic rules detailed in Section~\ref{sec:heuristics} are applied t
 Temporal context is incorporated by segmenting the dataset into overlapping sliding windows of $n = 30$ samples (3~s at 10~Hz) with a stride of $s = 15$ samples (1.5~s). Each window is labelled as spoofed if the majority of its constituent samples are labelled spoofed by the heuristics. The sliding window approach captures short-duration spoofing events while providing sufficient temporal context for the classifier to distinguish transient anomalies from persistent attacks.
 
 \subsubsection{Stage 5 -- Dataset Split}
-The windowed dataset is split into training (70\%), validation (15\%), and test (15\%) sets with strict flight-level isolation: all windows from a given simulation flight are assigned to a single partition. This prevents the classifier from learning flight-specific artefacts that would not generalise to new missions. The final dataset comprises 48,207 labelled records across the three partitions.
+The windowed dataset is split into training (70\%), validation (15\%), and test (15\%) sets with strict flight-level isolation: all windows from a given simulation flight are assigned to a single partition. This prevents the classifier from learning flight-specific artefacts that would not generalise to new missions. The final dataset comprises 7,920 labelled windows across the three partitions.
 
 \subsection{Heuristic Labelling Rules}
 \label{sec:heuristics}
