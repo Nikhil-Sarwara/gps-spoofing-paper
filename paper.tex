@@ -230,14 +230,14 @@ where $\alpha$ is a scaling factor that maps angular rate to an equivalent linea
 
 The thresholds $\tau_\omega = 0.05$~rad/s and $\tau_v = 5.0$~m/s were selected empirically based on analysis of the training dataset. The angular rate threshold of 0.05~rad/s corresponds approximately to the noise floor of the IMU gyroscopes during steady flight, distinguishing between genuine angular motion (above threshold) and sensor noise (below threshold). The velocity threshold of 5.0~m/s was chosen to be above the typical ground speed during hover and low-speed manoeuvres while remaining sensitive to spoofed velocities that would typically be injected at higher values to achieve effective trajectory control.
 
-A GPS Trust Index (GTI) is derived from the discriminator as a continuous measure of GPS integrity:
+A GPS Trust Index (GTI) is derived from the discriminator as a continuous measure of GPS integrity. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score, providing temporal smoothing that prevents single-window noise from triggering transient trust degradation:
 
 \begin{equation}
-\text{GTI}(t) = 1 - \frac{1}{1 + \exp\left(-k \cdot (\|\mathbf{v}_{\text{GPS}}(t)\| - \tau_v)\right)} \cdot \frac{1}{1 + \exp\left(k \cdot (\|\boldsymbol{\omega}_{\text{all}}(t)\| - \tau_\omega)\right)}
+G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\Phi_t - \theta)\bigr]
 \label{eq:gti}
 \end{equation}
 
-where $k$ is a steepness parameter controlling the transition sharpness. The GTI ranges from 0 (low trust, likely spoofed) to 1 (high trust, likely authentic). The two sigmoid factors capture the velocity and angular rate conditions respectively: the GTI approaches 0 when velocity is high and angular rate is low (the spoofing signature), and approaches 1 when either velocity is low (no spoofing possible) or angular rate is high (consistent with manoeuvring or turbulence).
+where $\alpha = 0.95$ provides temporal smoothing, $k$ scales the consistency score, $\theta$ is an offset determining the score at which trust begins to degrade, $\sigma(x) = 1 / (1 + e^{-x})$ is the logistic sigmoid, and $\Delta\Phi_t$ measures the GPS--IMU consistency discrepancy. The GTI ranges from 0 (low trust, likely spoofed) to 1 (high trust, likely authentic).
 
 The physical interdependence established by the discriminator is directly reflected in the downstream machine learning model's architectural focus. As visualized in Figure~\ref{fig:feature_importance}, an empirical feature evaluation reveals that GPS velocity magnitude (\texttt{vel\_m\_s}) along with IMU roll and pitch angular rates dominate the classifier's split selections. This structural prioritization validates the design of the physical consistency condition; when a spoofing attack disrupts the cross-modal correlation between these specific sensors, it creates an out-of-distribution signature that the ensemble trees can immediately isolate.
 
