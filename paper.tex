@@ -578,7 +578,7 @@ G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\
 
 with smoothing factor $\alpha = 0.95$, sigmoid gain $k = 10$, and threshold offset $\theta = 2$. The sigmoid function $\sigma(x) = 1/(1 + e^{-x})$ maps the centred anomaly score to the interval $[0, 1]$, where values near 0 indicate nominal tracking and values near 1 indicate severe inconsistency.
 
-Figure~\ref{fig:gti_validation} plots the GTI trajectory for the F8 session under two conditions: (a) normal flight with 7~m/s crosswind, and (b) spoofing with a 3~m/s velocity drift injected starting at $t = 74$~s.
+Figure~\ref{fig:gti_validation} plots the GTI trajectory under two conditions: (a) normal flight with 7~m/s crosswind, and (b) spoofing with a 3~m/s velocity drift injected starting at $t = 74$~s.
 
 \begin{figure}[htbp]
 \centering
