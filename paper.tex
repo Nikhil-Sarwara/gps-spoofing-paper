@@ -569,7 +569,7 @@ The latency between spoofing onset and the first anomalous window was 2.8 second
 \subsection{GPS Trust Index Validation}
 \label{sec:gti_validation}
 
-The GPS Trust Index ($G_t$) introduced in Section~\ref{sec:discriminator} was evaluated on the F8 telemetry stream to assess its ability to distinguish between normal wind-induced perturbations and spoofing-induced drift. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score $\Delta\Phi$, which measures the GPS--IMU consistency discrepancy defined in Equation~\ref{eq:deltaphi}.
+The GPS Trust Index ($G_t$) introduced in Section~\ref{sec:discriminator} was evaluated on a representative telemetry stream to assess its ability to distinguish between normal wind-induced perturbations and spoofing-induced drift. The GTI is computed as an exponentially weighted moving average (EMA) of a sigmoid-transformed anomaly score $\Delta\Phi$, which measures the GPS--IMU consistency discrepancy defined in Equation~\ref{eq:deltaphi}.
 
 \begin{equation}
 G_t = \alpha \cdot G_{t-1} + (1 - \alpha) \cdot \bigl[1 - \sigma(k \cdot \Delta\Phi - \theta)\bigr],
